@@ -1,0 +1,2 @@
+"""Devoluciones de artículos vendidos."""
+

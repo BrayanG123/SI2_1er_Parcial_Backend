@@ -1,0 +1,2 @@
+"""Infraestructura de persistencia compartida."""
+

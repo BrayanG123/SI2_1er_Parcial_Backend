@@ -1,0 +1,2 @@
+"""Endpoints de promociones."""
+

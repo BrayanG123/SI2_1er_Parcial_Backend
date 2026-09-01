@@ -1,0 +1,2 @@
+"""Información básica de proveedores."""
+

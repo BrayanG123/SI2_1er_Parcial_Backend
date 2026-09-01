@@ -1,0 +1,2 @@
+"""Modelos ORM del catálogo."""
+

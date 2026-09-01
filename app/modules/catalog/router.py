@@ -1,0 +1,2 @@
+"""Endpoints del catálogo."""
+

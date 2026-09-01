@@ -1,0 +1,2 @@
+"""Modelo ORM de categorías."""
+

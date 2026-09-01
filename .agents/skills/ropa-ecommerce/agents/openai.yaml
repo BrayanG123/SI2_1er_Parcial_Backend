@@ -1,0 +1,7 @@
+interface:
+  display_name: "E-commerce de Ropa"
+  short_description: "Contexto y reglas del e-commerce de ropa"
+  default_prompt: "Usa $ropa-ecommerce para continuar este repositorio respetando el alcance y la arquitectura vigentes."
+policy:
+  allow_implicit_invocation: true
+
