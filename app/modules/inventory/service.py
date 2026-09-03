@@ -143,6 +143,7 @@ class InventoryService:
         commit: bool = False,
     ) -> Inventario:
         self._ensure_positive(quantity)
+        self._validate_active_references(branch_id, variant_id)
         item = self._get_existing_locked(branch_id, variant_id)
         if item.stock_disponible < quantity:
             raise ConflictError("Stock disponible insuficiente para la reserva.")
@@ -214,6 +215,8 @@ class InventoryService:
         quantity: int,
         *,
         reference_id: UUID | None = None,
+        reference_type: str = "DEVOLUCION",
+        observation: str | None = None,
         commit: bool = False,
     ) -> Inventario:
         self._ensure_positive(quantity)
@@ -223,8 +226,9 @@ class InventoryService:
             item,
             TipoMovimiento.DEVOLUCION,
             quantity,
-            reference_type="DEVOLUCION" if reference_id else None,
+            reference_type=reference_type if reference_id else None,
             reference_id=reference_id,
+            observation=observation,
         )
         return self._complete(item, commit=commit)
 

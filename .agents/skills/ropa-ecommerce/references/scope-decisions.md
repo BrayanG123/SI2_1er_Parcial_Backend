@@ -88,17 +88,39 @@ siguientes.
 - El cliente puede cancelar una reserva incluso en estado `PREPARADA`.
 - Cancelar una reserva no equivale a cancelar una compra: todavía no existe una
   venta ni un pago.
+- Completar la atención sin compra libera las prendas. La conversión a pedido
+  vende las cantidades elegidas, libera las restantes, consume el stock físico
+  y reservado vendido y marca la reserva como completada.
 - Estados vigentes: `PENDIENTE`, `CONFIRMADA`, `PREPARADA`, `COMPLETADA`,
   `CANCELADA` y `VENCIDA`.
 
+### Carrito, pedidos y venta POS
+
+- El carrito no modifica existencias y sus precios son solo estimativos.
+- Al confirmar, el backend vuelve a validar catálogo, precio y stock, calcula
+  los totales y actualiza inventario dentro de una única transacción.
+- Los pedidos `WEB` y `MOBILE` se crean en estado `CREADO`, preparados para el
+  módulo posterior de pagos; una venta `POS` se registra como `COMPLETADO`.
+- `Pedido` es la única entidad de venta para los tres canales y conserva el
+  precio confirmado en cada detalle.
+- Una venta POS puede asociarse a un cliente activo o usar consumidor final.
+
 ### Pagos, devoluciones y reembolsos
 
+- La integración vigente usa un adaptador determinista de prueba detrás de un
+  contrato independiente; no recibe ni persiste datos financieros sensibles.
 - No se implementará un flujo avanzado para pagos duplicados.
 - Mantén los estados mínimos `PENDIENTE`, `APROBADO`, `RECHAZADO` y
   `REEMBOLSADO`; `RECHAZADO` no requiere recuperación compleja.
+- Aprobar un pago digital cambia el pedido a `PAGADO`. Rechazarlo lo cancela y
+  repone el inventario previamente descontado.
+- Una venta POS registra un pago `CAJA` aprobado junto con el pedido.
 - Las devoluciones pertenecen al MVP, pero su flujo es demostrativo y sencillo.
 - Una devolución se vincula al pedido y a sus detalles.
-- Completar una devolución puede reingresar existencias y originar un reembolso.
+- Las cantidades acumuladas de devoluciones no canceladas no pueden superar lo
+  vendido. Sus estados son `SOLICITADA`, `APROBADA`, `COMPLETADA` y `CANCELADA`.
+- Completar una devolución permite decidir si reingresa existencias y si origina
+  un reembolso. El pedido queda `REEMBOLSADO` cuando se devuelve el monto total.
 
 ### Nube y Docker
 

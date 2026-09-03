@@ -202,6 +202,74 @@ se ejecutan en el servicio de inventario con bloqueo de fila y generan un
 `MovimientoInventario` dentro de la misma transacción. La migración
 `20260902_0005` crea las restricciones e índices correspondientes.
 
+## Reservas
+
+`POST /api/v1/reservations` permite al cliente reservar una o varias variantes
+de una única sucursal. La operación incrementa `stock_reservado` y crea los
+movimientos de inventario dentro de la misma transacción. `GET
+/api/v1/reservations/mine` expone el historial del cliente y `POST
+/api/v1/reservations/{id}/cancel` libera las prendas incluso desde el estado
+`PREPARADA`.
+
+La bandeja `GET /api/v1/reservations/branch` está disponible para administrador
+y encargado; el encargado queda limitado a su sucursal. Las transiciones
+válidas son `PENDIENTE → CONFIRMADA → PREPARADA → COMPLETADA`, con cancelación
+desde cualquiera de los tres estados activos. Completar la atención sin una
+compra libera las prendas. Convertirla en pedido vende las cantidades elegidas,
+libera las restantes y consume simultáneamente el stock físico y reservado.
+
+La migración `20260902_0006` crea reservas y detalles. El vencimiento al final
+del día elegido se ejecuta de forma portable, sin proveedor de nube específico:
+
+```powershell
+python -m app.scripts.expire_reservations --limit 100
+```
+
+## Carrito, pedidos y venta POS
+
+`/api/v1/cart` mantiene un único carrito activo por cliente y permite agregar,
+editar, retirar o vaciar líneas. Los precios mostrados allí son estimativos: al
+confirmar, el backend vuelve a consultar prendas, precios y disponibilidad.
+
+`POST /api/v1/orders/checkout` crea pedidos `WEB` o `MOBILE` desde el carrito y
+`POST /api/v1/orders/from-reservation/{id}` convierte únicamente las cantidades
+elegidas de una reserva. Ambos generan un `Pedido` en estado `CREADO`, conservan
+el precio confirmado en sus detalles y registran los movimientos de inventario
+en la misma transacción. Los clientes consultan `/orders/mine` y su detalle.
+
+La venta presencial reutiliza la misma entidad con canal `POS` y estado
+`COMPLETADO`. Administrador y cajero pueden buscar existencias por SKU mediante
+`GET /api/v1/orders/pos/variants` y registrar `POST /api/v1/orders/pos`; el
+cliente es opcional. `/orders/manage` ofrece historial y filtros operativos con
+alcance de sucursal para encargado y cajero. La migración
+`20260902_0007` crea carritos, pedidos y sus detalles.
+
+## Pagos, devoluciones y reembolsos
+
+`app/integrations/payment_gateway` define el contrato independiente de la
+pasarela. La implementación actual es `TestPaymentGateway`: una simulación
+determinista identificada como ambiente `PRUEBA` que no solicita ni almacena
+tarjetas, cuentas o credenciales. `POST /api/v1/payments/orders/{pedido_id}`
+inicia un pago usando exclusivamente el total persistido del pedido y `POST
+/api/v1/payments/{pago_id}/confirm` permite simular aprobación o rechazo.
+
+Un pago aprobado deja el pedido digital en `PAGADO`. Un rechazo simple lo pasa
+a `CANCELADO` y repone el inventario descontado, dejando un movimiento trazable
+referenciado al pago. Las ventas POS crean automáticamente un pago `CAJA`
+aprobado dentro de la misma transacción del pedido.
+
+`POST /api/v1/returns` registra devoluciones parciales contra detalles vendidos;
+el acumulado de solicitudes no canceladas nunca puede superar la compra. El
+cliente consulta `/returns/mine` y puede cancelar solicitudes aún no aprobadas.
+Administrador y encargado gestionan `/returns/manage` con alcance por sucursal
+y las transiciones `SOLICITADA → APROBADA → COMPLETADA` o `CANCELADA`.
+
+Al completar se decide explícitamente si la prenda reingresa al inventario y si
+se genera el reembolso. Stock, movimiento, devolución y reembolso se guardan en
+la misma transacción. Los reembolsos usan precios históricos y referencias de
+prueba; el pedido y pago pasan a `REEMBOLSADO` al reintegrarse el monto total.
+La migración `20260902_0008` crea pagos, reembolsos, devoluciones y detalles.
+
 ## Pruebas
 
 ```powershell

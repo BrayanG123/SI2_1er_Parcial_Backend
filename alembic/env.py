@@ -6,9 +6,14 @@ from sqlalchemy import engine_from_config, pool
 from app.core.config import get_settings
 from app.db.base import Base
 from app.modules.branches import models as branches_models  # noqa: F401
+from app.modules.cart import models as cart_models  # noqa: F401
 from app.modules.categories import models as categories_models  # noqa: F401
 from app.modules.catalog import models as catalog_models  # noqa: F401
 from app.modules.inventory import models as inventory_models  # noqa: F401
+from app.modules.orders import models as orders_models  # noqa: F401
+from app.modules.payments import models as payments_models  # noqa: F401
+from app.modules.reservations import models as reservations_models  # noqa: F401
+from app.modules.returns import models as returns_models  # noqa: F401
 from app.modules.suppliers import models as suppliers_models  # noqa: F401
 from app.modules.users import models as users_models  # noqa: F401
 
