@@ -24,6 +24,7 @@ class EstadoPago(StrEnum):
 
 class MetodoPago(StrEnum):
     PASARELA_PRUEBA = "PASARELA_PRUEBA"
+    STRIPE = "STRIPE"
     CAJA = "CAJA"
 
 
@@ -35,7 +36,8 @@ class Pago(Base):
             name="ck_pagos_estado_valido",
         ),
         CheckConstraint(
-            "metodo IN ('PASARELA_PRUEBA','CAJA')", name="ck_pagos_metodo_valido"
+            "metodo IN ('PASARELA_PRUEBA','STRIPE','CAJA')",
+            name="ck_pagos_metodo_valido",
         ),
         CheckConstraint("monto > 0", name="ck_pagos_monto_positivo"),
         Index("uq_pagos_pedido_id", "pedido_id", unique=True),
@@ -62,7 +64,11 @@ class Pago(Base):
 
     @property
     def ambiente(self) -> str:
-        return "PRUEBA" if self.metodo == MetodoPago.PASARELA_PRUEBA.value else "LOCAL"
+        if self.metodo == MetodoPago.PASARELA_PRUEBA.value:
+            return "PRUEBA"
+        if self.metodo == MetodoPago.STRIPE.value:
+            return "STRIPE"
+        return "LOCAL"
 
     @property
     def monto_reembolsado(self) -> Decimal:

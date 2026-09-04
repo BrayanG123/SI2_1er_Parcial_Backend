@@ -35,6 +35,14 @@ class PaymentRepository:
             statement.options(*self._options()).execution_options(populate_existing=True)
         )
 
+    def get_by_reference(self, reference: str, *, for_update: bool = False) -> Pago | None:
+        statement = select(Pago).where(Pago.referencia_externa == reference)
+        if for_update:
+            statement = statement.with_for_update(of=Pago)
+        return self.db.scalar(
+            statement.options(*self._options()).execution_options(populate_existing=True)
+        )
+
     def refunded_total(self, payment_id: UUID) -> Decimal:
         statement = select(func.coalesce(func.sum(Reembolso.monto), 0)).where(
             Reembolso.pago_id == payment_id

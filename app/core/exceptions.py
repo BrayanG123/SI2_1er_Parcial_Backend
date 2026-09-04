@@ -88,6 +88,24 @@ class ConfigurationError(AppException):
         )
 
 
+class ExternalServiceError(AppException):
+    def __init__(self, message: str = "Un servicio externo no está disponible.") -> None:
+        super().__init__(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            code="external_service_error",
+            message=message,
+        )
+
+
+class InvalidWebhookError(AppException):
+    def __init__(self, message: str = "El webhook recibido no es válido.") -> None:
+        super().__init__(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            code="invalid_webhook",
+            message=message,
+        )
+
+
 def _error_content(code: str, message: str, details: Any | None = None) -> dict[str, Any]:
     return {
         "error": {

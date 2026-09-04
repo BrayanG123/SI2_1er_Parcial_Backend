@@ -9,6 +9,7 @@ from app.modules.catalog.router import admin_router as catalog_admin_router, pub
 from app.modules.inventory.router import public_router as inventory_public_router, router as inventory_router
 from app.modules.orders.router import router as orders_router
 from app.modules.payments.router import router as payments_router
+from app.modules.reports.router import router as reports_router
 from app.modules.reservations.router import router as reservations_router
 from app.modules.returns.router import router as returns_router
 from app.modules.suppliers.router import router as suppliers_router
@@ -33,3 +34,4 @@ api_router.include_router(cart_router)
 api_router.include_router(orders_router)
 api_router.include_router(payments_router)
 api_router.include_router(returns_router)
+api_router.include_router(reports_router)

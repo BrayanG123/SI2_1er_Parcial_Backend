@@ -35,7 +35,16 @@ class PagoRead(BaseModel):
     monto: Decimal
     monto_reembolsado: Decimal
     referencia_externa: str | None
-    ambiente: Literal["PRUEBA", "LOCAL"]
+    ambiente: Literal["PRUEBA", "STRIPE", "LOCAL"]
     creado_en: datetime
     pagado_en: datetime | None
     reembolsos: list[ReembolsoRead]
+    client_secret: str | None = None
+    publishable_key: str | None = None
+    moneda: str | None = None
+
+
+class StripeWebhookRead(BaseModel):
+    recibido: bool
+    procesado: bool
+    evento_id: str

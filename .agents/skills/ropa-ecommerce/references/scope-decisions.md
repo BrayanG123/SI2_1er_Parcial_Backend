@@ -34,7 +34,7 @@ siguientes.
 - Inventario por sucursal y variante de producto.
 - Reservas de varias prendas.
 - Carrito y compras web, móvil y presenciales.
-- Pasarela de pago en ambiente de prueba.
+- Pasarela Stripe configurable y adaptador determinista para pruebas.
 - Devoluciones y reembolsos simplificados.
 - Reportes de ventas, inventario, reservas y devoluciones.
 - UML 2.5+ y metodología PUDS.
@@ -47,6 +47,9 @@ siguientes.
 ### Inteligencia artificial
 
 - La IA se limita actualmente a reportes.
+- A solicitud del equipo, primero se implementan los reportes deterministas y
+  el dashboard. La integración de IA se deja para la etapa final y el punto 8
+  permanece en progreso hasta cumplir RF25.
 - El sistema calcula los indicadores con consultas controladas y puede usar IA
   para explicar o narrar el resultado.
 - Recomendaciones de prendas, análisis de preferencias y chatbot están
@@ -54,6 +57,9 @@ siguientes.
 - No existe por ahora `modules/recommendations`.
 - La entrada por voz no debe bloquear el reporte básico. Trátala como opcional o
   diferida hasta recibir confirmación específica.
+- Los reportes deterministas vigentes cubren ventas, inventario, reservas y
+  devoluciones; administrador consulta todas las sucursales y encargado solo la
+  asignada. No existe todavía proveedor, prompt ni endpoint de IA.
 
 ### Vestidor virtual
 
@@ -107,9 +113,15 @@ siguientes.
 
 ### Pagos, devoluciones y reembolsos
 
-- La integración vigente usa un adaptador determinista de prueba detrás de un
-  contrato independiente; no recibe ni persiste datos financieros sensibles.
-- No se implementará un flujo avanzado para pagos duplicados.
+- Stripe es la pasarela vigente para pagos digitales y permanece detrás del
+  contrato independiente de `integrations/payment_gateway`; el adaptador
+  determinista se conserva para desarrollo y pruebas automatizadas.
+- Las claves secretas viven exclusivamente en variables de entorno. Stripe
+  Elements recibe la clave publicable y el `client_secret`; la aplicación no
+  recibe ni persiste datos de tarjeta.
+- El webhook firmado de Stripe es la autoridad para aprobar o rechazar el pago.
+  Se aplican claves de idempotencia al crear Payment Intents y reembolsos, sin
+  incorporar un flujo avanzado de recuperación de pagos duplicados.
 - Mantén los estados mínimos `PENDIENTE`, `APROBADO`, `RECHAZADO` y
   `REEMBOLSADO`; `RECHAZADO` no requiere recuperación compleja.
 - Aprobar un pago digital cambia el pedido a `PAGADO`. Rechazarlo lo cancela y
@@ -185,7 +197,7 @@ operaciones reserven o vendan la misma existencia disponible.
 3. Inventario y movimientos.
 4. Reservas y sus estados.
 5. Carrito y pedidos de canales web, móvil y POS.
-6. Pagos de prueba, devoluciones y reembolsos.
+6. Pagos Stripe o de prueba, devoluciones y reembolsos.
 7. Reportes normales y explicación mediante IA.
 8. Promociones si el tiempo lo permite.
 9. Aplicación Flutter y vestidor virtual en la etapa final; el vestidor solo

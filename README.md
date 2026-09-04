@@ -28,7 +28,7 @@ backend/
 │   │   ├── reports/          # Reportes normales y narrados con IA
 │   │   └── promotions/       # Promociones, posterior al núcleo del MVP
 │   ├── integrations/
-│   │   ├── payment_gateway/  # Adaptador de la pasarela de pruebas
+│   │   ├── payment_gateway/  # Adaptadores Stripe y de pruebas
 │   │   └── ai_reports/       # Adaptador del servicio de IA
 │   └── shared/               # Utilidades realmente compartidas
 ├── alembic/                  # Migraciones de base de datos
@@ -106,6 +106,19 @@ DATABASE_URL=postgresql+psycopg://postgres:postgres@localhost:5432/ropa
 
 Ajusta usuario, contraseña, puerto o nombre de base antes de ejecutar las
 migraciones. Cambia también `JWT_SECRET` antes de cualquier despliegue.
+
+Para usar Stripe configura estas variables únicamente en `.env` o en el gestor
+de secretos del despliegue; nunca confirmes sus valores en Git:
+
+```dotenv
+PAYMENT_GATEWAY_PROVIDER=stripe
+STRIPE_SECRET_KEY=sk_test_...
+STRIPE_WEBHOOK_SECRET=whsec_...
+STRIPE_PUBLISHABLE_KEY=pk_test_...
+```
+
+El valor predeterminado `PAYMENT_GATEWAY_PROVIDER=test` conserva el adaptador
+determinista para desarrollo y pruebas automatizadas.
 
 ## Ejecución y estado de servicios
 
@@ -247,11 +260,28 @@ alcance de sucursal para encargado y cajero. La migración
 ## Pagos, devoluciones y reembolsos
 
 `app/integrations/payment_gateway` define el contrato independiente de la
-pasarela. La implementación actual es `TestPaymentGateway`: una simulación
-determinista identificada como ambiente `PRUEBA` que no solicita ni almacena
-tarjetas, cuentas o credenciales. `POST /api/v1/payments/orders/{pedido_id}`
-inicia un pago usando exclusivamente el total persistido del pedido y `POST
-/api/v1/payments/{pago_id}/confirm` permite simular aprobación o rechazo.
+pasarela. `StripePaymentGateway` crea un `PaymentIntent` en BOB con el total
+persistido del pedido, usa una clave de idempotencia por pedido y devuelve al
+cliente solamente el `client_secret` y la clave publicable necesarios para
+Stripe Elements. `TestPaymentGateway` permanece disponible como simulación
+determinista identificada como ambiente `PRUEBA`; ninguno de los adaptadores
+persiste datos de tarjeta.
+
+`POST /api/v1/payments/orders/{pedido_id}` inicia o recupera el mismo intento de
+pago pendiente. Stripe confirma el resultado mediante el webhook público
+`POST /api/v1/payments/stripe/webhook`, que verifica el cuerpo original con el
+encabezado `Stripe-Signature`. Se procesan `payment_intent.succeeded`,
+`payment_intent.payment_failed` y `payment_intent.canceled`: un intento fallido
+permanece pendiente para permitir corregir el medio de pago, mientras éxito y
+cancelación son terminales e idempotentes. El endpoint manual
+`POST /api/v1/payments/{pago_id}/confirm` se limita al adaptador de prueba.
+
+Para desarrollo local, Stripe CLI puede reenviar los eventos y entregar el
+`whsec_...` que debe usarse en esa sesión:
+
+```powershell
+stripe listen --forward-to localhost:8000/api/v1/payments/stripe/webhook
+```
 
 Un pago aprobado deja el pedido digital en `PAGADO`. Un rechazo simple lo pasa
 a `CANCELADO` y repone el inventario descontado, dejando un movimiento trazable
@@ -266,9 +296,35 @@ y las transiciones `SOLICITADA → APROBADA → COMPLETADA` o `CANCELADA`.
 
 Al completar se decide explícitamente si la prenda reingresa al inventario y si
 se genera el reembolso. Stock, movimiento, devolución y reembolso se guardan en
-la misma transacción. Los reembolsos usan precios históricos y referencias de
-prueba; el pedido y pago pasan a `REEMBOLSADO` al reintegrarse el monto total.
-La migración `20260902_0008` crea pagos, reembolsos, devoluciones y detalles.
+la misma transacción. Los reembolsos usan precios históricos y la referencia de
+su pasarela; el pedido y pago pasan a `REEMBOLSADO` al reintegrarse el monto total.
+Cuando el pago proviene de Stripe, el reembolso se crea mediante Stripe Refunds
+con una clave de idempotencia por devolución. La migración `20260902_0008` crea
+pagos, reembolsos, devoluciones y detalles, y `20260904_0009` habilita el método
+`STRIPE` en la restricción de pagos.
+
+## Reportes deterministas y dashboard
+
+`/api/v1/reports` expone consultas controladas de ventas, inventario, reservas y
+devoluciones. `GET /reports/dashboard` consolida los cuatro resultados;
+`/sales`, `/inventory`, `/reservations` y `/returns` permiten consumir cada
+reporte por separado. `/reports/options` entrega únicamente las sucursales que
+el usuario puede consultar.
+
+Ventas, reservas y devoluciones admiten filtros inclusivos `date_from` y
+`date_to`; todos los reportes admiten `branch_id` cuando corresponde. Los
+administradores pueden consultar cualquier sucursal y los encargados quedan
+limitados a la sucursal asignada. El cajero y el cliente no tienen acceso.
+
+La venta bruta considera pedidos `PAGADO`, `COMPLETADO` o `REEMBOLSADO`; la
+venta neta descuenta los reembolsos vinculados. El inventario es una fotografía
+actual y señala como stock bajo las variantes con 1 a 5 unidades disponibles.
+Los indicadores no se persisten: se recalculan desde las fuentes del dominio y
+por ello no requieren una migración adicional a `20260902_0008`.
+
+La explicación narrativa mediante IA continúa diferida. No existe todavía un
+proveedor, prompt ni endpoint de IA, y los reportes funcionan sin esa
+integración.
 
 ## Pruebas
 
