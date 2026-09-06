@@ -158,6 +158,23 @@ interactiva para que la contraseña no quede en el historial del terminal:
 python -m app.scripts.create_admin --email admin@tienda.com --nombres Ada --apellidos Admin
 ```
 
+Para poblar una base vacía con 10 ciudades, 70 clientes, 160 productos, 480
+variantes y 240 ventas históricas, usa el seeder demostrativo. La guía completa,
+incluidas las cuentas generadas y las opciones de personalización, está en
+[`SEEDER_DATOS_DEMO.md`](SEEDER_DATOS_DEMO.md).
+
+```powershell
+python -m app.scripts.seed_demo --dry-run
+python -m app.scripts.seed_demo
+```
+
+Si una carga anterior generó correos con el dominio reservado `.test`, se
+pueden corregir sin borrar datos ni cambiar contraseñas:
+
+```powershell
+python -m app.scripts.seed_demo --reparar-emails
+```
+
 ## Autenticación y usuarios
 
 Endpoints principales:

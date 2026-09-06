@@ -11,6 +11,8 @@ from sqlalchemy.pool import StaticPool
 from app.core.security import hash_password
 from app.db.base import Base
 from app.db.session import get_db
+from app.integrations.payment_gateway.client import TestPaymentGateway
+from app.integrations.payment_gateway.factory import get_payment_gateway
 from app.main import app
 from app.modules.branches.models import Ciudad, Sucursal
 from app.modules.cart.models import Carrito
@@ -49,6 +51,7 @@ def client(db: Session) -> Generator[TestClient, None, None]:
         yield db
 
     app.dependency_overrides[get_db] = override_get_db
+    app.dependency_overrides[get_payment_gateway] = TestPaymentGateway
     with TestClient(app, raise_server_exceptions=False) as test_client:
         yield test_client
     app.dependency_overrides.clear()

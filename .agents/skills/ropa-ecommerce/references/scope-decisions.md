@@ -142,6 +142,21 @@ siguientes.
   una nube sin confirmación explícita.
 - Docker sí forma parte de la base técnica y debe permanecer portable.
 
+### Datos demostrativos
+
+- El seeder compartible prioriza catálogo y ventas: por defecto crea 10
+  ciudades, 15 sucursales, 70 clientes, 160 productos con 480 variantes y 240
+  pedidos históricos.
+- La carga es determinista, transaccional y solo admite tablas de negocio
+  vacías; no borra ni mezcla datos existentes.
+- Los pagos sembrados usan `CAJA` o `PASARELA_PRUEBA`. El seeder no llama a
+  Stripe ni crea referencias Stripe ficticias.
+- Las credenciales demostrativas comparten una contraseña solicitada al
+  ejecutar y almacenada únicamente como hash.
+- Los usuarios y proveedores demostrativos usan el dominio de documentación
+  `demo.example.com`; las cargas antiguas con `.test` se corrigen de forma
+  transaccional mediante `seed_demo --reparar-emails`.
+
 ### Organización de repositorios
 
 - Backend, frontend Angular y aplicación Flutter usan repositorios Git

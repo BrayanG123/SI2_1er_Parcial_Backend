@@ -94,7 +94,13 @@ class InventoryService:
             raise NotFoundError("Producto no encontrado.")
         return self.inventory.list_public_availability(product_id)
 
-    def receive(self, data: RecepcionCreate, *, user: Usuario) -> Inventario:
+    def receive(
+        self,
+        data: RecepcionCreate,
+        *,
+        user: Usuario,
+        commit: bool = True,
+    ) -> Inventario:
         self._ensure_branch_scope(user, data.sucursal_id)
         _branch, variant = self._validate_active_references(data.sucursal_id, data.variante_id)
         item = self._get_or_create_locked(data.sucursal_id, data.variante_id)
@@ -107,7 +113,7 @@ class InventoryService:
             reference_id=variant.producto.proveedor_id,
             observation=data.observacion,
         )
-        return self._complete(item, commit=True)
+        return self._complete(item, commit=commit)
 
     def adjust(self, data: AjusteCreate, *, user: Usuario) -> Inventario:
         self._ensure_branch_scope(user, data.sucursal_id)
